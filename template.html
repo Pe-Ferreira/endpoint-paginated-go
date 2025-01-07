@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>endpoint-paginated-go</title>
+</head>
+<body>
+    <h1>Displaying data from Go server</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Corretora</th>
+                <th>Patrimônio líquido</th>
+                <th>UF</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ range . }}
+            <tr>
+                <td>{{ .NomeComercial }}</td>
+                <td>{{ .ValorPatrimonioLiquido }}</td>
+                <td>{{ .Uf }}</td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
+</body>
+</html>
