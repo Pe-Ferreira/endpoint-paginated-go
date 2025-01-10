@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 type Broker struct {
@@ -35,11 +36,64 @@ type BrokerDTO struct {
 	Uf                     string
 }
 
-type BrokersDTO []BrokerDTO
+type PaginatedResponse[T any] struct {
+	Page       int `json:"page"`
+	PageSize   int `json:"pageSize"`
+	TotalItems int `json:"totalItems"`
+	TotalPages int `json:"totalPages"`
+	Data       T   `json:"data"`
+}
 
 func main() {
 	http.HandleFunc("/", MainHandler)
+	http.HandleFunc("/paginated", PaginatedHandler)
 	http.ListenAndServe(":8080", nil)
+}
+
+func PaginatedHandler(writer http.ResponseWriter, request *http.Request) {
+	pageParam := request.URL.Query().Get("page")
+	pageSizeParam := request.URL.Query().Get("pageSize")
+
+	page, err := strconv.Atoi(pageParam)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(pageSizeParam)
+	if err != nil || pageSize < 1 {
+		pageSize = 5 //default page size
+	}
+
+	start := (page - 1) * pageSize
+	end := start + pageSize
+
+	var brokers, error = getBrokers()
+	if error != nil {
+		panic(error)
+	}
+
+	if start > len(brokers) {
+		start = len(brokers)
+	}
+	if end > len(brokers) {
+		end = len(brokers)
+	}
+
+	paginatedData := brokers[start:end]
+	totalItems := len(brokers)
+	totalPages := (totalItems + pageSize - 1) / pageSize
+
+	response := PaginatedResponse[[]Broker]{
+		Page:       page,
+		PageSize:   pageSize,
+		TotalItems: totalItems,
+		TotalPages: totalPages,
+		Data:       paginatedData,
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	writer.WriteHeader(http.StatusOK)
+	json.NewEncoder(writer).Encode(response)
 }
 
 func MainHandler(writer http.ResponseWriter, request *http.Request) {
@@ -96,3 +150,5 @@ func prepareBrokersDTO(brokers []Broker) []BrokerDTO {
 	}
 	return brokersDTO
 }
+
+// fix html display? It seems the fault is on my browser
